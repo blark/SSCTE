@@ -1,0 +1,11 @@
+# Build directory
+build/
+main/build/
+
+# Config files
+sdkconfig
+sdkconfig.old
+
+# Certificate files
+certs/*.crt
+certs/*.key

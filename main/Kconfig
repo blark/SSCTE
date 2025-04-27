@@ -1,0 +1,163 @@
+menu "Serial TCP Bridge Configuration"
+    menu "WiFi Configuration"
+        config WIFI_SSID
+            string "WiFi SSID"
+            default "mywifi"
+            help
+                SSID (network name) for the example to connect to.
+
+        config WIFI_PASSWORD
+            string "WiFi Password"
+            default "mypassword"
+            help
+                WiFi password (WPA or WPA2) for the example to use.
+                Can be left blank if the network has no security set.
+
+        config WIFI_MAX_CONNECT_RETRIES
+            int "Maximum WiFi connection retries"
+            default 10
+            range 1 30
+            help
+                Maximum number of connection attempts before giving up.
+
+        config WIFI_CONNECT_RETRY_INTERVAL
+            int "WiFi connection retry interval (ms)"
+            default 1000
+            range 100 10000
+            help
+                Time in milliseconds between connection attempts.
+
+        config WIFI_RECONNECT_BASE_DELAY_MS
+            int "WiFi reconnect base delay (ms)"
+            default 500
+            range 100 5000
+            help
+                Initial backoff delay for WiFi reconnection in milliseconds.
+
+        config WIFI_RECONNECT_MAX_DELAY_MS
+            int "WiFi maximum reconnect delay (ms)"
+            default 30000
+            range 1000 300000
+            help
+                Maximum backoff delay for WiFi reconnection in milliseconds.
+    endmenu
+
+    menu "Network Configuration"
+        config BRIDGE_PORT
+            int "TCP Server Port"
+            default 6969
+            range 1024 65535
+            help
+                Port number for TCP server to listen on.
+    endmenu
+
+    menu "UART Configuration"
+        config UART_PORT
+            int "UART Port Number"
+            default 1
+            range 0 2
+            help
+                UART port number (0, 1, or 2).
+
+        config UART_TX_PIN
+            int "UART TX Pin"
+            default 7
+            range 0 39
+            help
+                GPIO pin for UART TX.
+
+        config UART_RX_PIN
+            int "UART RX Pin"
+            default 6
+            range 0 39
+            help
+                GPIO pin for UART RX.
+
+        config UART_BAUD_RATE
+            int "UART Baud Rate"
+            default 1500000
+            help
+                Baud rate for UART communication.
+
+        config UART_BUF_SIZE
+            int "UART Buffer Size"
+            default 4096
+            range 256 8192
+            help
+                Size of the UART driver buffer in bytes.
+    endmenu
+
+    menu "Buffer and Timing Configuration"
+        config DATA_BUF_SIZE
+            int "Data Transfer Buffer Size"
+            default 2048
+            range 256 8192
+            help
+                Size of the buffer used for data transfer between TCP and UART.
+
+        config SELECT_TIMEOUT_MS
+            int "Select Timeout (ms)"
+            default 1
+            range 1 100
+            help
+                Non-blocking select timeout in milliseconds.
+
+        config UART_READ_TIMEOUT_MS
+            int "UART Read Timeout (ms)"
+            default 20
+            range 1 500
+            help
+                UART read timeout in milliseconds.
+
+        config TASK_DELAY_MS
+            int "Task Delay (ms)"
+            default 10
+            range 1 100
+            help
+                Main loop delay in milliseconds to prevent CPU hogging.
+    endmenu
+
+    menu "TLS Configuration"
+        config TLS_ENABLE
+            bool "Enable TLS security"
+            default n
+            help
+                Enable TLS encryption for TCP connections. When enabled, the server
+                requires a valid certificate and private key.
+
+        config TLS_SERVER_CERT_PATH
+            string "Server certificate path"
+            default "/spiffs/server.crt"
+            depends on TLS_ENABLE
+            help
+                Path to server certificate file in PEM format.
+                The certificate must be stored in SPIFFS.
+
+        config TLS_SERVER_KEY_PATH
+            string "Server private key path"
+            default "/spiffs/server.key"
+            depends on TLS_ENABLE
+            help
+                Path to server private key file in PEM format.
+                The key must be stored in SPIFFS.
+
+        config TLS_CLIENT_VERIFY
+            bool "Verify client certificates (mTLS)"
+            default n
+            depends on TLS_ENABLE
+            help
+                Enable mutual TLS by requiring and verifying client certificates.
+                When enabled, clients must present a certificate signed by the
+                configured CA certificate.
+
+        config TLS_CA_CERT_PATH
+            string "CA certificate path"
+            default "/spiffs/ca.crt"
+            depends on TLS_CLIENT_VERIFY
+            help
+                Path to CA certificate file in PEM format used for verifying
+                client certificates. Only needed when client verification is enabled.
+                The certificate must be stored in SPIFFS.
+    endmenu
+
+endmenu
