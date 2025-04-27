@@ -1,15 +1,15 @@
 # Secure Super Cereal Tap ESP 💁‍♂️🔒🌉
 *Half serial interface, half encryption layer, half TCP bridge*
 
-A lightweight ESP32 firmware to bridge UART devices over TCP with optional TLS/mTLS support.
-
-Motivation: Existing solutions lacked secure connectivity (or maybe I’m just bad at Google), and I was tired of physically disconnecting and relocating devices to debug or fix them. Also, it made a fun weekend project.
-
 ```mermaid
 flowchart LR
   Client["<b>Client</b><br/><code>socat STDIO,raw,echo=0 TCP:{$ESP32_IP}:6969</code>"] <-->|TCP or TLS| ESP32["<b>Secure Super Cereal Tap ESP</b><br/>TX=GPIO7<br/>RX=GPIO6"]
   ESP32 <-->|UART TX/RX| UARTDevice["<b>Target Device</b><br/>ESP RX > DEV TX<br/>ESP TX > DEV RX"]
 ```
+
+A lightweight ESP32 firmware to bridge UART devices over TCP with optional TLS/mTLS support.
+
+Motivation: Existing solutions lacked secure connectivity (or maybe I’m just bad at Google), and I was tired of physically disconnecting and relocating devices to debug or fix them. Also, it made a fun weekend project.
 
 ## Features ✨
 
