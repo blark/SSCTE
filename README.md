@@ -1,7 +1,7 @@
 # Secure Super Cereal Tap ESP 💁‍♂️🔒🌉
 *Half serial interface, half encryption layer, half TCP bridge*
 
-A lightweight ESP32 firmware to bridge UART devices over TCP with optional TLS/mTLS support. 
+A lightweight ESP32 firmware to bridge UART devices over TCP with optional TLS/mTLS support.
 
 Motivation: Existing solutions lacked secure connectivity (or maybe I’m just bad at Google), and I was tired of physically disconnecting and relocating devices to debug or fix them. Also, it made a fun weekend project.
 
@@ -118,14 +118,13 @@ openssl req -newkey rsa:2048 -nodes -keyout client.key -out client.csr -subj "/C
 # Sign client certificate (for mTLS)
 openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out client.crt -days 365
 ```
-
-Place the files in `certs/`:
+Place the files in `<repo_root>/certs/`:
 
 - `certs/server.crt` - Server certificate
 - `certs/server.key` - Server private key
 - `certs/ca.crt` - CA certificate (only for mTLS)
 
-**Note:** Certificate paths in `menuconfig` must match SPIFFS paths.
+**Note:** Certificate paths in `menuconfig` are ESP32 SPIFFS partition paths (not local filesystem). Don't change them unless you know what you're doing.
 
 ## Build, flash, monitor 🏗️💥🧐
 
@@ -139,7 +138,7 @@ idf.py build flash monitor
 
 ## Default Configuration 💡
 
-- **WiFi**: Connects to configured SSID with auto-reconnect 
+- **WiFi**: Connects to configured SSID with auto-reconnect
 - **UART**:
   - Port: UART1
   - Pins: TX=7, RX=6
