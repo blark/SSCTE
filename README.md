@@ -173,4 +173,7 @@ socat STDIO,raw,echo=0,escape=0x1d OPENSSL:[ESP32_IP]:6969,verify=0
 socat STDIO,raw,echo=0,escape=0x1d TCP:[ESP32_IP]:6969
 ```
 
+## License
 
+This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License.
+See the [LICENSE](LICENSE) file for details.
