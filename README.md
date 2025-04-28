@@ -45,11 +45,20 @@ idf.py menuconfig
 ```
 
 **Important settings:**
-- **Serial TCP Bridge Configuration → WiFi Configuration:** SSID, password, reconnect behavior
-- **Serial TCP Bridge Configuration → UART Configuration:** Pins, port, baud rate
-- **Serial TCP Bridge Configuration → Network Configuration:** TCP port
-- **Serial TCP Bridge Configuration → Buffer and Timing Configuration:** Buffer sizes
-- **Serial TCP Bridge Configuration → TLS Configuration:** Enable TLS, client verification
+
+These should be automatically enabled by menuconfig when you enable TLS in Component configuration.
+
+- **Component configuration → ESP-TLS → Enable ESP-TLS Server**
+- **Partition Table → Custom partition table CSV (partitions.csv)**
+
+*Note:* For the ESP32-C6 board I tested, in **Serial flasher config** I had to configure my board's flash size and enabled **Detect flash size when flashing bootloader** or it wouldn't boot.
+
+**Bridge settings:**
+- **Component configuration → Serial TCP Bridge Configuration → WiFi Configuration:** SSID, password, reconnect behavior
+- **Component configuration → Serial TCP Bridge Configuration → UART Configuration:** Pins, port, baud rate
+- **Component configuration → Serial TCP Bridge Configuration → Network Configuration:** TCP port
+- **Component configuration → Serial TCP Bridge Configuration → Buffer and Timing Configuration:** Buffer sizes
+- **Component configuration → Serial TCP Bridge Configuration → TLS Configuration:** Enable TLS, client verification
 
 ### 4. Configure the partition table
 
@@ -84,7 +93,7 @@ If using TLS, configure it in menuconfig:
 idf.py menuconfig
 ```
 
-Navigate to: **Serial TCP Bridge Configuration → TLS Configuration**
+Navigate to: **Component configuration → Serial TCP Bridge Configuration → TLS Configuration**
 
 Important TLS settings:
 
@@ -103,19 +112,22 @@ Place certificates in `<repo_root>/certs`. The build system automatically create
 To generate certificates:
 
 ```bash
-# Generate CA key and certificate
-openssl req -x509 -newkey rsa:2048 -nodes -keyout ca.key -out ca.crt -days 365 -subj "/CN=Test-CA"
+# Generate CA key and certificate using EC
+openssl ecparam -name prime256v1 -genkey -noout -out ca.key
+openssl req -new -x509 -key ca.key -out ca.crt -days 365 -subj "/CN=Test-CA"
 
-# Generate server key and CSR
-openssl req -newkey rsa:2048 -nodes -keyout server.key -out server.csr -subj "/CN=ESP32-Server"
+# Generate server key and CSR using EC
+openssl ecparam -name prime256v1 -genkey -noout -out server.key
+openssl req -new -key server.key -out server.csr -subj "/CN=ESP32-Server"
 
-# Sign server certificate
+# Sign server certificate (same as before)
 openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 365
 
-# Generate client key and CSR (for mTLS)
-openssl req -newkey rsa:2048 -nodes -keyout client.key -out client.csr -subj "/CN=Client"
+# Generate client key and CSR using EC (for mTLS)
+openssl ecparam -name prime256v1 -genkey -noout -out client.key
+openssl req -new -key client.key -out client.csr -subj "/CN=Client"
 
-# Sign client certificate (for mTLS)
+# Sign client certificate (same as before)
 openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out client.crt -days 365
 ```
 Place the files in `<repo_root>/certs/`:

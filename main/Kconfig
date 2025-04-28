@@ -124,6 +124,8 @@ menu "Serial TCP Bridge Configuration"
             help
                 Enable TLS encryption for TCP connections. When enabled, the server
                 requires a valid certificate and private key.
+            select PARTITION_TABLE_CUSTOM
+            select ESP_TLS_SERVER
 
         config TLS_SERVER_CERT_PATH
             string "Server certificate path"
