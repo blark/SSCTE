@@ -5,6 +5,7 @@ main/build/
 # Config files
 sdkconfig
 sdkconfig.old
+dependencies.lock
 
 # Certificate files
 certs/*.crt

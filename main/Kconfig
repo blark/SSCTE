@@ -1,16 +1,23 @@
+config AVAILABLE_BRIDGE_UARTS
+    int
+    default 1 if SOC_UART_NUM = 2
+    default 2 if SOC_UART_NUM = 3
+    default 3 if SOC_UART_NUM = 4
+    default 4 if SOC_UART_NUM = 5
+
 menu "Serial TCP Bridge Configuration"
     menu "WiFi Configuration"
         config WIFI_SSID
             string "WiFi SSID"
             default "mywifi"
             help
-                SSID (network name) for the example to connect to.
+                SSID (network name) to connect to.
 
         config WIFI_PASSWORD
             string "WiFi Password"
             default "mypassword"
             help
-                WiFi password (WPA or WPA2) for the example to use.
+                WiFi password (WPA or WPA2).
                 Can be left blank if the network has no security set.
 
         config WIFI_MAX_CONNECT_RETRIES
@@ -42,42 +49,22 @@ menu "Serial TCP Bridge Configuration"
                 Maximum backoff delay for WiFi reconnection in milliseconds.
     endmenu
 
-    menu "Network Configuration"
-        config BRIDGE_PORT
-            int "TCP Server Port"
-            default 6969
-            range 1024 65535
-            help
-                Port number for TCP server to listen on.
-    endmenu
+    #menu "Network Configuration"
+    #    config BRIDGE_PORT
+    #        int "TCP Server Port"
+    #        default 6969
+    #        range 1024 65535
+    #        help
+    #            Port number for TCP server to listen on.
+    #endmenu
 
     menu "UART Configuration"
-        config UART_PORT
-            int "UART Port Number"
+        config ENABLE_UART_BRIDGES
+            int "Number of UART bridges to enable"
+            range 1 AVAILABLE_BRIDGE_UARTS
             default 1
-            range 0 2
             help
-                UART port number (0, 1, or 2).
-
-        config UART_TX_PIN
-            int "UART TX Pin"
-            default 7
-            range 0 39
-            help
-                GPIO pin for UART TX.
-
-        config UART_RX_PIN
-            int "UART RX Pin"
-            default 6
-            range 0 39
-            help
-                GPIO pin for UART RX.
-
-        config UART_BAUD_RATE
-            int "UART Baud Rate"
-            default 1500000
-            help
-                Baud rate for UART communication.
+                Number of UART bridges to enable (UART0 is reserved for debug).
 
         config UART_BUF_SIZE
             int "UART Buffer Size"
@@ -85,6 +72,158 @@ menu "Serial TCP Bridge Configuration"
             range 256 8192
             help
                 Size of the UART driver buffer in bytes.
+
+        menu "UART1 Bridge Configuration"
+            depends on ENABLE_UART_BRIDGES >= 1
+
+            config UART1_TX_PIN
+                int "UART1 TX Pin"
+                default 7
+                help
+                    GPIO pin for UART1 TX.
+
+            config UART1_RX_PIN
+                int "UART1 RX Pin"
+                default 6
+                help
+                    GPIO pin for UART1 RX.
+
+            config UART1_BAUD_RATE
+                int "UART1 Baud Rate"
+                default 1500000
+                help
+                    Baud rate for UART1.
+
+            config UART1_TCP_PORT
+                int "UART1 TCP Port"
+                default 6969
+                range 1024 65535
+                help
+                    TCP port for UART1 bridge.
+        endmenu
+
+        menu "UART2 Bridge Configuration"
+            depends on ENABLE_UART_BRIDGES >= 2 && AVAILABLE_BRIDGE_UARTS >= 2
+
+            config UART2_TX_PIN
+                int "UART2 TX Pin"
+                default 10
+                help
+                    GPIO pin for UART2 TX.
+
+            config UART2_RX_PIN
+                int "UART2 RX Pin"
+                default 9
+                help
+                    GPIO pin for UART2 RX.
+
+            config UART2_BAUD_RATE
+                int "UART2 Baud Rate"
+                default 1500000
+                help
+                    Baud rate for UART2.
+
+            config UART2_TCP_PORT
+                int "UART2 TCP Port"
+                default 6970
+                range 1024 65535
+                help
+                    TCP port for UART2 bridge.
+        endmenu
+
+        menu "UART3 Bridge Configuration"
+            depends on ENABLE_UART_BRIDGES >= 3 && AVAILABLE_BRIDGE_UARTS >= 3
+
+            config UART3_TX_PIN
+                int "UART3 TX Pin"
+                default 17
+                help
+                    GPIO pin for UART3 TX.
+
+            config UART3_RX_PIN
+                int "UART3 RX Pin"
+                default 16
+                help
+                    GPIO pin for UART3 RX.
+
+            config UART3_BAUD_RATE
+                int "UART3 Baud Rate"
+                default 1500000
+                help
+                    Baud rate for UART3.
+
+            config UART3_TCP_PORT
+                int "UART3 TCP Port"
+                default 6971
+                range 1024 65535
+                help
+                    TCP port for UART3 bridge.
+        endmenu
+
+        # UART4 Configuration
+        menu "UART4 Bridge Configuration"
+            depends on ENABLE_UART_BRIDGES >= 4 && AVAILABLE_BRIDGE_UARTS >= 4
+
+            config UART4_TX_PIN
+                int "UART4 TX Pin"
+                default 19
+                help
+                    GPIO pin for UART4 TX.
+
+            config UART4_RX_PIN
+                int "UART4 RX Pin"
+                default 18
+                help
+                    GPIO pin for UART4 RX.
+
+            config UART4_BAUD_RATE
+                int "UART4 Baud Rate"
+                default 1500000
+                help
+                    Baud rate for UART4.
+
+            config UART4_TCP_PORT
+                int "UART4 TCP Port"
+                default 6972
+                range 1024 65535
+                help
+                    TCP port for UART4 bridge.
+        endmenu
+
+        #config UART_PORT
+        #    int "UART Port Number"
+        #    default 1
+        #    range 0 2
+        #    help
+        #        UART port number (0, 1, or 2).
+
+        #config UART_TX_PIN
+        #    int "UART TX Pin"
+        #    default 7
+        #    range 0 39
+        #    help
+        #        GPIO pin for UART TX.
+
+        #config UART_RX_PIN
+        #    int "UART RX Pin"
+        #    default 6
+        #    range 0 39
+        #    help
+        #        GPIO pin for UART RX.
+
+        #config UART_BAUD_RATE
+        #    int "UART Baud Rate"
+        #    default 1500000
+        #    help
+        #        Baud rate for UART communication.
+
+        config UART_READ_TIMEOUT_MS
+            int "UART Read Timeout (ms)"
+            default 20
+            range 1 500
+            help
+                UART read timeout in milliseconds.
+
     endmenu
 
     menu "Buffer and Timing Configuration"
@@ -101,13 +240,6 @@ menu "Serial TCP Bridge Configuration"
             range 1 100
             help
                 Non-blocking select timeout in milliseconds.
-
-        config UART_READ_TIMEOUT_MS
-            int "UART Read Timeout (ms)"
-            default 20
-            range 1 500
-            help
-                UART read timeout in milliseconds.
 
         config TASK_DELAY_MS
             int "Task Delay (ms)"
