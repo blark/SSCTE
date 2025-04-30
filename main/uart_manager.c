@@ -94,7 +94,7 @@ static esp_err_t init_bridge(int bridge_idx) {
             bridge->tcp_port = CONFIG_UART1_TCP_PORT;
             break;
 
-    #if CONFIG_AVAILABLE_BRIDGE_UARTS > 2
+    #if SOC_UART_NUM > 2
         case 2: // UART2
             bridge->uart_port = UART_NUM_2;
             bridge->tx_pin = CONFIG_UART2_TX_PIN;
@@ -104,7 +104,7 @@ static esp_err_t init_bridge(int bridge_idx) {
             break;
     #endif
 
-    #if CONFIG_AVAILABLE_BRIDGE_UARTS > 3
+    #if SOC_UART_NUM > 3
         case 3: // UART3
             bridge->uart_port = UART_NUM_3;
             bridge->tx_pin = CONFIG_UART3_TX_PIN;
@@ -114,7 +114,7 @@ static esp_err_t init_bridge(int bridge_idx) {
             break;
     #endif
 
-    #if CONFIG_AVAILABLE_BRIDGE_UARTS > 4
+    #if SOC_UART_NUM > 4
         case 4: // UART4
             bridge->uart_port = UART_NUM_4;
             bridge->tx_pin = CONFIG_UART4_TX_PIN;
