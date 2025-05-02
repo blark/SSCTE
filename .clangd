@@ -1,0 +1,7 @@
+CompileFlags:
+  Remove: [-m*, -f*]
+  CompilationDatabase: build
+Diagnostics:
+  Suppress:
+    - unused-includes
+    - pp_file_not_found
