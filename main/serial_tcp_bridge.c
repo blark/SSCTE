@@ -1,14 +1,22 @@
-#include <stdio.h>  // Needed for fopen(), FILE
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_log.h"
-#include "nvs_flash.h"
-#include "string.h"
-#include "sdkconfig.h"
-#include "wifi_manager.h"
-#include "uart_manager.h"
-#include "tcp_server.h"
-#include "esp_spiffs.h"
+/* Standard C library includes */
+#include <stdint.h>     /* Fixed width integer types */
+#include <stdio.h>      /* Standard input/output functions */
+#include <string.h>     /* String manipulation functions */
+
+/* FreeRTOS includes */
+#include "freertos/FreeRTOS.h"  /* Core FreeRTOS functionality */
+#include "freertos/task.h"      /* Task creation and management */
+
+/* ESP-IDF system includes */
+#include "esp_log.h"    /* Logging functionality */
+#include "nvs_flash.h"  /* Non-volatile storage */
+#include "sdkconfig.h"  /* Project configuration */
+#include "esp_spiffs.h" /* SPI Flash File System */
+
+/* Application-specific includes */
+#include "wifi_manager.h"  /* WiFi connection management */
+#include "uart_manager.h"  /* UART communication handling */
+#include "tcp_server.h"    /* TCP server implementation */
 
 /**
  * @file serial_tcp_bridge.c
@@ -24,7 +32,7 @@ static const char *TAG = "SerialTCP";    // Logging tag
 
 /* ----------------- Function prototypes ----------------- */
 static void cleanup_resources(void);
-#if defined(CONFIG_TLS_ENABLE)
+#if defined(CONFIG_SSCTE_TLS_ENABLE)
 static char* load_cert_file(const char* file_path);
 static void free_tls_files(tcp_server_tls_config_t *cfg);
 #endif
@@ -36,7 +44,7 @@ static void free_tls_files(tcp_server_tls_config_t *cfg);
  * @return Pointer to null-terminated string with file contents, or NULL on error
  *         Caller must free this memory
  */
-#if defined(CONFIG_TLS_ENABLE)
+#if defined(CONFIG_SSCTE_TLS_ENABLE)
 static char* load_cert_file(const char* file_path) {
     FILE* file = fopen(file_path, "r");
     if (file == NULL) {
@@ -45,7 +53,7 @@ static char* load_cert_file(const char* file_path) {
     }
 
     fseek(file, 0, SEEK_END);
-    long file_size = ftell(file);
+    int64_t file_size = ftell(file);
     fseek(file, 0, SEEK_SET);
 
     char* buffer = malloc(file_size + 1);
@@ -68,6 +76,15 @@ static char* load_cert_file(const char* file_path) {
     return buffer;
 }
 
+/**
+ * @brief Frees memory allocated for TLS certificate and key files
+ *
+ * Releases memory allocated for the server certificate, server key,
+ * and CA certificate files, then zeros out the entire configuration
+ * structure.
+ *
+ * @param cfg Pointer to the TLS configuration structure
+ */
 static void free_tls_files(tcp_server_tls_config_t *cfg) {
     if (cfg->server_cert_pem) free((void*)cfg->server_cert_pem);
     if (cfg->server_key_pem)  free((void*)cfg->server_key_pem);
@@ -88,7 +105,7 @@ static void cleanup_resources(void) {
     uart_manager_cleanup();
     wifi_cleanup();
 
-#if defined(CONFIG_TLS_ENABLE)
+#if defined(CONFIG_SSCTE_TLS_ENABLE)
     esp_vfs_spiffs_unregister("spiffs");
 #endif
 
@@ -97,8 +114,11 @@ static void cleanup_resources(void) {
 
 /**
  * @brief Application entry point
+ *
+ * Initializes system components and runs the main network server loop.
  */
 void app_main(void) {
+    // Reduce logging verbosity
     esp_log_level_set("wifi", ESP_LOG_WARN);
     esp_log_level_set("esp_netif_handlers", ESP_LOG_WARN);
     esp_log_level_set("system_api", ESP_LOG_WARN);
@@ -120,7 +140,8 @@ void app_main(void) {
         return;
     }
 
-#if defined(CONFIG_TLS_ENABLE)
+#if defined(CONFIG_SSCTE_TLS_ENABLE)
+    // Mount filesystem for certificates
     esp_vfs_spiffs_conf_t spiffs_conf = {
         .base_path = "/spiffs",
         .partition_label = "spiffs",
@@ -144,7 +165,8 @@ void app_main(void) {
     int active_bridges = uart_manager_get_active_count();
     ESP_LOGI(TAG, "Successfully initialized %d UART bridges", active_bridges);
 
-#if defined(CONFIG_TLS_ENABLE)
+#if defined(CONFIG_SSCTE_TLS_ENABLE)
+    // Set up TLS configuration
     tcp_server_tls_config_t tls_config = {0};
     bool cert_loaded = false;
 
@@ -188,6 +210,7 @@ void app_main(void) {
     ESP_LOGI(TAG, "TCP servers initialized (TLS disabled)");
 #endif
 
+    // Main processing loop
     ESP_LOGI(TAG, "Startup complete, entering main loop");
     while (1) {
         tcp_handle_new_connections();
@@ -195,7 +218,7 @@ void app_main(void) {
         vTaskDelay(pdMS_TO_TICKS(CONFIG_TASK_DELAY_MS));
     }
 
-#if defined(CONFIG_TLS_ENABLE)
+#if defined(CONFIG_SSCTE_TLS_ENABLE)
 cleanup:
     if (cert_loaded) {
         free_tls_files(&tls_config);
@@ -204,4 +227,3 @@ cleanup:
     return;
 #endif
 }
-

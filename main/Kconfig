@@ -1,9 +1,14 @@
 config AVAILABLE_BRIDGE_UARTS
     int
-    default 1 if SOC_UART_NUM = 2
-    default 2 if SOC_UART_NUM = 3
-    default 3 if SOC_UART_NUM = 4
-    default 4 if SOC_UART_NUM = 5
+    default 1 if SOC_UART_NUM = 2 # for chips with only 2 UARTs (i.e. esp32c3 and esp32c6)
+    default 2 if SOC_UART_NUM = 3 # for chips with 3 UARTs (i.e. esp32, esp32s3)
+    default 3 if SOC_UART_NUM = 4 # just in case (not a known configuration)
+    default 4 if SOC_UART_NUM = 5 # for chips with 5 UARTs (i.e. esp32p4)
+    help
+      Number of UART peripherals to enable for bridging.
+
+      Calculated automatically as the total SoC UARTs (SOC_UART_NUM) minus one,
+      as the first UART (typically UART0) is reserved for the debug monitor.
 
 menu "Serial TCP Bridge Configuration"
     menu "WiFi Configuration"
@@ -250,19 +255,18 @@ menu "Serial TCP Bridge Configuration"
     endmenu
 
     menu "TLS Configuration"
-        config TLS_ENABLE
+        config SSCTE_TLS_ENABLE
             bool "Enable TLS security"
             default n
             help
                 Enable TLS encryption for TCP connections. When enabled, the server
                 requires a valid certificate and private key.
-            select PARTITION_TABLE_CUSTOM
             select ESP_TLS_SERVER
 
         config TLS_SERVER_CERT_PATH
             string "Server certificate path"
             default "/spiffs/server.crt"
-            depends on TLS_ENABLE
+            depends on SSCTE_TLS_ENABLE
             help
                 Path to server certificate file in PEM format.
                 The certificate must be stored in SPIFFS.
@@ -270,7 +274,7 @@ menu "Serial TCP Bridge Configuration"
         config TLS_SERVER_KEY_PATH
             string "Server private key path"
             default "/spiffs/server.key"
-            depends on TLS_ENABLE
+            depends on SSCTE_TLS_ENABLE
             help
                 Path to server private key file in PEM format.
                 The key must be stored in SPIFFS.
@@ -278,7 +282,7 @@ menu "Serial TCP Bridge Configuration"
         config TLS_CLIENT_VERIFY
             bool "Verify client certificates (mTLS)"
             default n
-            depends on TLS_ENABLE
+            depends on SSCTE_TLS_ENABLE
             help
                 Enable mutual TLS by requiring and verifying client certificates.
                 When enabled, clients must present a certificate signed by the

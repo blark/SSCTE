@@ -29,7 +29,7 @@
 #include <errno.h>
 #include "sdkconfig.h"
 
-#if defined(CONFIG_TLS_ENABLE)
+#if defined(CONFIG_SSCTE_TLS_ENABLE)
 #include "esp_tls.h"
 #include "esp_tls_errors.h"
 #endif
@@ -42,7 +42,7 @@ static const char *TAG = "TCPServer";
  */
 static bool g_secure_mode = false;
 
-#if defined(CONFIG_TLS_ENABLE)
+#if defined(CONFIG_SSCTE_TLS_ENABLE)
 /**
  * Global TLS configuration copied from user input.
  * Contains certificates and keys needed for TLS operation.
@@ -107,7 +107,7 @@ static esp_tls_cfg_server_t g_esp_tls_cfg;
  * Releases memory allocated for certificate and key strings.
  * Sets all pointers to NULL to prevent use-after-free.
  */
-#if defined(CONFIG_TLS_ENABLE)
+#if defined(CONFIG_SSCTE_TLS_ENABLE)
 static void free_tls_config(void)
 {
     free((void*)g_tls_config.ca_cert_pem);
@@ -130,7 +130,7 @@ static void cleanup_client_tls(uart_bridge_t *bridge)
         bridge->tls_handle = NULL;
     }
 }
-#endif /* CONFIG_TLS_ENABLE */
+#endif /* CONFIG_SSCTE_TLS_ENABLE */
 
 /**
  * @brief Clean up client connection resources
@@ -142,7 +142,7 @@ static void cleanup_client_tls(uart_bridge_t *bridge)
  */
 static void cleanup_client(uart_bridge_t *bridge)
 {
-#if defined(CONFIG_TLS_ENABLE)
+#if defined(CONFIG_SSCTE_TLS_ENABLE)
     if (g_secure_mode && bridge->tls_handle) {
         cleanup_client_tls(bridge);
     }
@@ -185,7 +185,7 @@ void tcp_cleanup(void)
         }
     }
 
-#if defined(CONFIG_TLS_ENABLE)
+#if defined(CONFIG_SSCTE_TLS_ENABLE)
     // Clean up global TLS resources
     if (g_secure_mode) {
         free_tls_config();
@@ -218,7 +218,7 @@ esp_err_t tcp_server_init(const tcp_server_tls_config_t *tls_config)
 
     ESP_LOGI(TAG, "Initializing TCP servers for %d bridges", num_bridges);
 
-#if defined(CONFIG_TLS_ENABLE)
+#if defined(CONFIG_SSCTE_TLS_ENABLE)
     if (tls_config) {
         /* Enable TLS mode and copy PEM strings */
         g_secure_mode = true;
@@ -303,7 +303,7 @@ esp_err_t tcp_server_init(const tcp_server_tls_config_t *tls_config)
 
         bridge->server_sock = sock;
         bridge->client_sock = -1;
-#if defined(CONFIG_TLS_ENABLE)
+#if defined(CONFIG_SSCTE_TLS_ENABLE)
         bridge->tls_handle = NULL;
 #endif
     }
@@ -331,7 +331,7 @@ static bool tcp_handle_new_connection(uart_bridge_t *bridge)
     // Skip if already connected or socket not valid
     if (!bridge->enabled || bridge->server_sock < 0 ||
         bridge->client_sock >= 0
-#if defined(CONFIG_TLS_ENABLE)
+#if defined(CONFIG_SSCTE_TLS_ENABLE)
         || bridge->tls_handle != NULL
 #endif
     ) {
@@ -369,7 +369,7 @@ static bool tcp_handle_new_connection(uart_bridge_t *bridge)
     int flag = 1;
     setsockopt(csock, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag));
 
-#if defined(CONFIG_TLS_ENABLE)
+#if defined(CONFIG_SSCTE_TLS_ENABLE)
     if (g_secure_mode) {
         // Set up TLS connection
         esp_tls_t *h = esp_tls_init();
@@ -395,7 +395,7 @@ static bool tcp_handle_new_connection(uart_bridge_t *bridge)
 #endif
         // Plain TCP connection
         bridge->client_sock = csock;
-#if defined(CONFIG_TLS_ENABLE)
+#if defined(CONFIG_SSCTE_TLS_ENABLE)
     }
 #endif
 
@@ -442,7 +442,7 @@ static int tcp_receive_data(uart_bridge_t *bridge, uint8_t *buffer, size_t max_l
     if (!bridge->enabled || !buffer || max_len == 0 ||
         ((!g_secure_mode && bridge->client_sock < 0) ||
          (g_secure_mode
-#if defined(CONFIG_TLS_ENABLE)
+#if defined(CONFIG_SSCTE_TLS_ENABLE)
           && bridge->tls_handle == NULL
 #endif
          ))) {
@@ -451,7 +451,7 @@ static int tcp_receive_data(uart_bridge_t *bridge, uint8_t *buffer, size_t max_l
 
     int sockfd;
 
-#if defined(CONFIG_TLS_ENABLE)
+#if defined(CONFIG_SSCTE_TLS_ENABLE)
     if (g_secure_mode) {
         // Get the socket descriptor from the TLS handle
         if (esp_tls_get_conn_sockfd(bridge->tls_handle, &sockfd) != ESP_OK) {
@@ -461,7 +461,7 @@ static int tcp_receive_data(uart_bridge_t *bridge, uint8_t *buffer, size_t max_l
     } else {
 #endif
         sockfd = bridge->client_sock;
-#if defined(CONFIG_TLS_ENABLE)
+#if defined(CONFIG_SSCTE_TLS_ENABLE)
     }
 #endif
 
@@ -495,13 +495,13 @@ static int tcp_receive_data(uart_bridge_t *bridge, uint8_t *buffer, size_t max_l
     // Data is available, read it using the appropriate method
     int bytes_read = 0;
 
-#if defined(CONFIG_TLS_ENABLE)
+#if defined(CONFIG_SSCTE_TLS_ENABLE)
     if (g_secure_mode) {
         bytes_read = esp_tls_conn_read(bridge->tls_handle, buffer, max_len);
     } else {
 #endif
         bytes_read = recv(bridge->client_sock, buffer, max_len, 0);
-#if defined(CONFIG_TLS_ENABLE)
+#if defined(CONFIG_SSCTE_TLS_ENABLE)
     }
 #endif
 
@@ -540,7 +540,7 @@ static int tcp_send_data(uart_bridge_t *bridge, const uint8_t *data, size_t len)
     if (!bridge->enabled || !data || len == 0 ||
         ((!g_secure_mode && bridge->client_sock < 0) ||
          (g_secure_mode
-#if defined(CONFIG_TLS_ENABLE)
+#if defined(CONFIG_SSCTE_TLS_ENABLE)
           && bridge->tls_handle == NULL
 #endif
          ))) {
@@ -549,13 +549,13 @@ static int tcp_send_data(uart_bridge_t *bridge, const uint8_t *data, size_t len)
 
     int ret = -1;
 
-#if defined(CONFIG_TLS_ENABLE)
+#if defined(CONFIG_SSCTE_TLS_ENABLE)
     if (g_secure_mode) {
         ret = esp_tls_conn_write(bridge->tls_handle, data, len);
     } else {
 #endif
         ret = send(bridge->client_sock, data, len, 0);
-#if defined(CONFIG_TLS_ENABLE)
+#if defined(CONFIG_SSCTE_TLS_ENABLE)
     }
 #endif
 
@@ -584,7 +584,7 @@ static bool tcp_is_client_connected(uart_bridge_t *bridge)
         return false;
     }
 
-#if defined(CONFIG_TLS_ENABLE)
+#if defined(CONFIG_SSCTE_TLS_ENABLE)
     if (g_secure_mode) {
         return bridge->tls_handle != NULL;
     }

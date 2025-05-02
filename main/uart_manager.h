@@ -14,7 +14,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
-#if defined(CONFIG_TLS_ENABLE)
+#if defined(CONFIG_SSCTE_TLS_ENABLE)
 #include "esp_tls.h"
 #endif
 
@@ -39,7 +39,7 @@ typedef struct {
     int client_sock;       // Connected client socket (-1 if none)
 
     // TLS support (if globally enabled in the build)
-#if defined(CONFIG_TLS_ENABLE)
+#if defined(CONFIG_SSCTE_TLS_ENABLE)
     esp_tls_t *tls_handle; // TLS connection handle (NULL if not using TLS)
 #endif
 } uart_bridge_t;
