@@ -4,9 +4,29 @@ config AVAILABLE_BRIDGE_UARTS
     default 2 if SOC_UART_NUM = 3
     default 3 if SOC_UART_NUM = 4
     default 4 if SOC_UART_NUM = 5
+    default 4 if SOC_UART_NUM = 6
+    default 0
 
 menu "Serial TCP Bridge Configuration"
+    choice NETWORK_INTERFACE
+        prompt "Network Interface"
+        default NETWORK_INTERFACE_WIFI
+        help
+            Select the network interface to use for TCP connections.
+
+        config NETWORK_INTERFACE_WIFI
+            bool "WiFi"
+            help
+                Use WiFi for network connectivity.
+
+        config NETWORK_INTERFACE_ETHERNET
+            bool "Ethernet"
+            help
+                Use Ethernet for network connectivity (ESP32-P4 and other chips with Ethernet support).
+    endchoice
+
     menu "WiFi Configuration"
+        depends on NETWORK_INTERFACE_WIFI
         config WIFI_SSID
             string "WiFi SSID"
             default "mywifi"
@@ -47,6 +67,122 @@ menu "Serial TCP Bridge Configuration"
             range 1000 300000
             help
                 Maximum backoff delay for WiFi reconnection in milliseconds.
+    endmenu
+
+    menu "Ethernet Configuration"
+        depends on NETWORK_INTERFACE_ETHERNET
+
+        choice ETH_PHY_MODEL
+            prompt "Ethernet PHY Model"
+            default ETH_PHY_IP101
+            help
+                Select the PHY chip model used on your board.
+
+            config ETH_PHY_IP101
+                bool "IP101"
+                help
+                    IP101 PHY chip.
+
+            config ETH_PHY_RTL8201
+                bool "RTL8201/SR8201"
+                help
+                    RTL8201/SR8201 PHY chip.
+
+            config ETH_PHY_LAN87XX
+                bool "LAN87xx"
+                help
+                    LAN8720/LAN8740/LAN8742A PHY chip.
+
+            config ETH_PHY_DP83848
+                bool "DP83848"
+                help
+                    DP83848 PHY chip.
+
+            config ETH_PHY_KSZ80XX
+                bool "KSZ80xx"
+                help
+                    KSZ8041/KSZ8081 PHY chip.
+        endchoice
+
+        config ETH_MDC_GPIO
+            int "SMI MDC GPIO number"
+            default 31
+            help
+                GPIO number used for SMI clock signal.
+                ESP32-P4-Module-DEV-KIT: GPIO31
+
+        config ETH_MDIO_GPIO
+            int "SMI MDIO GPIO number"
+            default 52
+            help
+                GPIO number used for SMI data signal.
+                ESP32-P4-Module-DEV-KIT: GPIO52
+
+        config ETH_PHY_RST_GPIO
+            int "PHY Reset GPIO number"
+            default 51
+            help
+                GPIO number used to reset the PHY chip.
+                Set to -1 to disable PHY reset.
+                ESP32-P4-Module-DEV-KIT: GPIO51
+
+        config ETH_PHY_ADDR
+            int "PHY Address"
+            default 1
+            range 0 31
+            help
+                PHY address on the SMI bus (0-31).
+
+        menu "RMII Pin Configuration"
+            config ETH_RMII_TX_EN_GPIO
+                int "RMII TX_EN GPIO"
+                default 49
+                help
+                    GPIO for RMII TX_EN signal.
+                    ESP32-P4-Module-DEV-KIT: GPIO49
+
+            config ETH_RMII_TXD0_GPIO
+                int "RMII TXD0 GPIO"
+                default 34
+                help
+                    GPIO for RMII TXD0 signal.
+                    ESP32-P4-Module-DEV-KIT: GPIO34
+
+            config ETH_RMII_TXD1_GPIO
+                int "RMII TXD1 GPIO"
+                default 35
+                help
+                    GPIO for RMII TXD1 signal.
+                    ESP32-P4-Module-DEV-KIT: GPIO35
+
+            config ETH_RMII_RXD0_GPIO
+                int "RMII RXD0 GPIO"
+                default 29
+                help
+                    GPIO for RMII RXD0 signal.
+                    ESP32-P4: GPIO29
+
+            config ETH_RMII_RXD1_GPIO
+                int "RMII RXD1 GPIO"
+                default 30
+                help
+                    GPIO for RMII RXD1 signal.
+                    ESP32-P4: GPIO30
+
+            config ETH_RMII_CRS_DV_GPIO
+                int "RMII CRS_DV GPIO"
+                default 28
+                help
+                    GPIO for RMII CRS_DV (Carrier Sense/Data Valid) signal.
+                    ESP32-P4-Module-DEV-KIT: GPIO28
+
+            config ETH_RMII_REF_CLK_GPIO
+                int "RMII REF_CLK GPIO"
+                default 50
+                help
+                    GPIO for RMII reference clock (50MHz).
+                    ESP32-P4-Module-DEV-KIT: GPIO50
+        endmenu
     endmenu
 
     #menu "Network Configuration"
@@ -257,7 +393,6 @@ menu "Serial TCP Bridge Configuration"
                 Enable TLS encryption for TCP connections. When enabled, the server
                 requires a valid certificate and private key.
             select PARTITION_TABLE_CUSTOM
-            select ESP_TLS_SERVER
 
         config TLS_SERVER_CERT_PATH
             string "Server certificate path"

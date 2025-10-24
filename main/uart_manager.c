@@ -1,3 +1,14 @@
+/**
+ * @file uart_manager.c
+ * @brief Multi-UART bridge manager implementation
+ *
+ * Manages multiple UART-to-TCP bridges with independent configuration.
+ * Each UART (1-4) can be configured with custom pins, baud rate, and TCP port.
+ * UART0 is reserved for console/debug output.
+ *
+ * The number of active bridges is set via CONFIG_ENABLE_UART_BRIDGES in menuconfig.
+ */
+
 #include "uart_manager.h"
 #include "driver/uart.h"
 #include "esp_log.h"
@@ -10,16 +21,11 @@
 
 static const char *TAG = "UARTManager";
 
-/**
- * Array of bridge instances - one for each UART being managed.
- * UART0 is reserved for debug, so bridges start from UART1.
- */
+/* Array of bridge instances - one for each UART being managed.
+ * UART0 is reserved for debug, so bridges start from UART1. */
 static uart_bridge_t bridges[CONFIG_AVAILABLE_BRIDGE_UARTS];
 
-/**
- * Tracks the number of successfully initialized bridges.
- * Used to report status and determine if initialization succeeded.
- */
+/* Tracks the number of successfully initialized bridges */
 static int active_bridges = 0;
 
 /**
@@ -66,6 +72,41 @@ static esp_err_t init_uart(uart_bridge_t *bridge) {
 }
 
 /**
+ * @brief UART configuration entry
+ *
+ * Contains all configuration needed for one UART bridge.
+ * Values are loaded from Kconfig at compile time.
+ */
+typedef struct {
+    uart_port_t uart_port;  ///< UART peripheral number (1-4)
+    int tx_pin;             ///< GPIO pin for TX
+    int rx_pin;             ///< GPIO pin for RX
+    int baud_rate;          ///< Baud rate in bits/second
+    int tcp_port;           ///< TCP port number for this bridge
+} uart_config_entry_t;
+
+/**
+ * @brief Configuration table for all UART bridges
+ *
+ * Maps bridge index (0-based) to UART configuration.
+ * Array size is determined by CONFIG_AVAILABLE_BRIDGE_UARTS.
+ * This table-driven approach eliminates repetitive switch statements
+ * and makes adding new UARTs trivial.
+ */
+static const uart_config_entry_t uart_configs[] = {
+    {UART_NUM_1, CONFIG_UART1_TX_PIN, CONFIG_UART1_RX_PIN, CONFIG_UART1_BAUD_RATE, CONFIG_UART1_TCP_PORT},
+#if CONFIG_AVAILABLE_BRIDGE_UARTS >= 2
+    {UART_NUM_2, CONFIG_UART2_TX_PIN, CONFIG_UART2_RX_PIN, CONFIG_UART2_BAUD_RATE, CONFIG_UART2_TCP_PORT},
+#endif
+#if CONFIG_AVAILABLE_BRIDGE_UARTS >= 3
+    {UART_NUM_3, CONFIG_UART3_TX_PIN, CONFIG_UART3_RX_PIN, CONFIG_UART3_BAUD_RATE, CONFIG_UART3_TCP_PORT},
+#endif
+#if CONFIG_AVAILABLE_BRIDGE_UARTS >= 4
+    {UART_NUM_4, CONFIG_UART4_TX_PIN, CONFIG_UART4_RX_PIN, CONFIG_UART4_BAUD_RATE, CONFIG_UART4_TCP_PORT},
+#endif
+};
+
+/**
  * @brief Initialize a single bridge instance
  *
  * Sets up a bridge structure with configuration from menuconfig,
@@ -80,61 +121,22 @@ static esp_err_t init_bridge(int bridge_idx) {
         return ESP_ERR_INVALID_ARG;
     }
 
-    // UART number is bridge_idx + 1 (skipping UART0 which is reserved for debug)
-    int uart_num = bridge_idx + 1;
     uart_bridge_t *bridge = &bridges[bridge_idx];
+    const uart_config_entry_t *config = &uart_configs[bridge_idx];
 
-    // Configure the bridge based on UART number using Kconfig settings
-    switch (uart_num) {
-        case 1: // UART1
-            bridge->uart_port = UART_NUM_1;
-            bridge->tx_pin = CONFIG_UART1_TX_PIN;
-            bridge->rx_pin = CONFIG_UART1_RX_PIN;
-            bridge->baud_rate = CONFIG_UART1_BAUD_RATE;
-            bridge->tcp_port = CONFIG_UART1_TCP_PORT;
-            break;
-
-    #if SOC_UART_NUM > 2
-        case 2: // UART2
-            bridge->uart_port = UART_NUM_2;
-            bridge->tx_pin = CONFIG_UART2_TX_PIN;
-            bridge->rx_pin = CONFIG_UART2_RX_PIN;
-            bridge->baud_rate = CONFIG_UART2_BAUD_RATE;
-            bridge->tcp_port = CONFIG_UART2_TCP_PORT;
-            break;
-    #endif
-
-    #if SOC_UART_NUM > 3
-        case 3: // UART3
-            bridge->uart_port = UART_NUM_3;
-            bridge->tx_pin = CONFIG_UART3_TX_PIN;
-            bridge->rx_pin = CONFIG_UART3_RX_PIN;
-            bridge->baud_rate = CONFIG_UART3_BAUD_RATE;
-            bridge->tcp_port = CONFIG_UART3_TCP_PORT;
-            break;
-    #endif
-
-    #if SOC_UART_NUM > 4
-        case 4: // UART4
-            bridge->uart_port = UART_NUM_4;
-            bridge->tx_pin = CONFIG_UART4_TX_PIN;
-            bridge->rx_pin = CONFIG_UART4_RX_PIN;
-            bridge->baud_rate = CONFIG_UART4_BAUD_RATE;
-            bridge->tcp_port = CONFIG_UART4_TCP_PORT;
-            break;
-    #endif
-
-        default:
-            ESP_LOGE(TAG, "Unsupported UART number: %d", uart_num);
-            return ESP_ERR_INVALID_ARG;
-    }
+    // Apply configuration from table
+    bridge->uart_port = config->uart_port;
+    bridge->tx_pin = config->tx_pin;
+    bridge->rx_pin = config->rx_pin;
+    bridge->baud_rate = config->baud_rate;
+    bridge->tcp_port = config->tcp_port;
 
     // Allocate data buffers for this bridge
     bridge->uart_buf = malloc(CONFIG_UART_BUF_SIZE);
     bridge->tcp_buf = malloc(CONFIG_UART_BUF_SIZE);
 
     if (!bridge->uart_buf || !bridge->tcp_buf) {
-        ESP_LOGE(TAG, "Failed to allocate buffers for UART%d bridge", uart_num);
+        ESP_LOGE(TAG, "Failed to allocate buffers for UART%d bridge", bridge->uart_port);
         free(bridge->uart_buf);  // Safe even if NULL
         free(bridge->tcp_buf);   // Safe even if NULL
         return ESP_ERR_NO_MEM;
@@ -144,7 +146,7 @@ static esp_err_t init_bridge(int bridge_idx) {
     esp_err_t ret = init_uart(bridge);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to initialize UART%d: %s",
-                 uart_num, esp_err_to_name(ret));
+                 bridge->uart_port, esp_err_to_name(ret));
         free(bridge->uart_buf);
         free(bridge->tcp_buf);
         return ret;

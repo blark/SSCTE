@@ -1,14 +1,14 @@
-#include <stdio.h>  // Needed for fopen(), FILE
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_log.h"
-#include "nvs_flash.h"
-#include "string.h"
-#include "sdkconfig.h"
-#include "wifi_manager.h"
+#include <stdio.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <esp_log.h>
+#include <nvs_flash.h>
+#include <string.h>
+#include <sdkconfig.h>
+#include <esp_spiffs.h>
+#include "network_manager.h"
 #include "uart_manager.h"
 #include "tcp_server.h"
-#include "esp_spiffs.h"
 
 /**
  * @file serial_tcp_bridge.c
@@ -45,7 +45,7 @@ static char* load_cert_file(const char* file_path) {
     }
 
     fseek(file, 0, SEEK_END);
-    long file_size = ftell(file);
+    int64_t file_size = ftell(file);
     fseek(file, 0, SEEK_SET);
 
     char* buffer = malloc(file_size + 1);
@@ -79,14 +79,14 @@ static void free_tls_files(tcp_server_tls_config_t *cfg) {
 /**
  * @brief Clean up all resources before exit
  *
- * Closes sockets, stops UART drivers, and deinitializes WiFi
+ * Closes sockets, stops UART drivers, and deinitializes network
  */
 static void cleanup_resources(void) {
     ESP_LOGI(TAG, "Cleaning up resources");
 
     tcp_cleanup();
     uart_manager_cleanup();
-    wifi_cleanup();
+    network_cleanup();
 
 #if defined(CONFIG_TLS_ENABLE)
     esp_vfs_spiffs_unregister("spiffs");
@@ -99,24 +99,28 @@ static void cleanup_resources(void) {
  * @brief Application entry point
  */
 void app_main(void) {
+    /* Reduce verbosity of less critical components */
     esp_log_level_set("wifi", ESP_LOG_WARN);
     esp_log_level_set("esp_netif_handlers", ESP_LOG_WARN);
     esp_log_level_set("system_api", ESP_LOG_WARN);
 
+    /* Initialize NVS (required for network config storage) */
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        /* NVS partition was truncated or format changed - erase and retry */
         ESP_LOGW(TAG, "Erasing NVS flash");
         ESP_ERROR_CHECK(nvs_flash_erase());
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
 
+    /* Register cleanup handler for graceful shutdown */
     esp_register_shutdown_handler(cleanup_resources);
 
-    ESP_ERROR_CHECK(wifi_init());
+    ESP_ERROR_CHECK(network_init());
 
-    if (!wifi_wait_connected(30)) {
-        ESP_LOGE(TAG, "WiFi connection failed, aborting");
+    if (!network_wait_connected(30)) {
+        ESP_LOGE(TAG, "Network connection failed, aborting");
         return;
     }
 
@@ -189,10 +193,12 @@ void app_main(void) {
 #endif
 
     ESP_LOGI(TAG, "Startup complete, entering main loop");
+
+    /* Main event loop: handle connections and data transfer for all bridges */
     while (1) {
-        tcp_handle_new_connections();
-        tcp_process_data();
-        vTaskDelay(pdMS_TO_TICKS(CONFIG_TASK_DELAY_MS));
+        tcp_handle_new_connections();  // Accept new clients on listening sockets
+        tcp_process_data();             // Bidirectional data transfer (UART ↔ TCP)
+        vTaskDelay(pdMS_TO_TICKS(CONFIG_TASK_DELAY_MS));  // Yield to other tasks
     }
 
 #if defined(CONFIG_TLS_ENABLE)
