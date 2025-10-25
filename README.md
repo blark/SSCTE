@@ -265,30 +265,34 @@ socat STDIO,raw,echo=0,escape=0x1d TCP:[ESP32_IP]:6969
 
 ## Architecture Overview 🏗️
 
-```
-┌─────────────────────────────────────────────────────┐
-│                  serial_tcp_bridge.c                │
-│              (Main application loop)                │
-└────────┬────────────────────────────────────┬───────┘
-         │                                    │
-         ▼                                    ▼
-┌────────────────────┐              ┌─────────────────┐
-│  network_manager   │              │  uart_manager   │
-│  (Abstraction)     │              │  (Multi-UART)   │
-└─────┬──────────────┘              └────────┬────────┘
-      │                                      │
-      ▼                                      ▼
-┌─────────────┐                    ┌──────────────────┐
-│ WiFi/Eth    │                    │  tcp_server      │
-│ Backend     │◄───────────────────┤  (TLS/mTLS)      │
-└─────────────┘                    └──────────────────┘
+```mermaid
+graph TD
+    Main["<b>serial_tcp_bridge.c</b><br/>Main application loop"]
+
+    Main --> NetMgr["<b>network_manager</b><br/>Unified network API"]
+    Main --> UartMgr["<b>uart_manager</b><br/>Multi-UART configuration"]
+
+    NetMgr --> Backend["<b>WiFi/Ethernet Backend</b><br/>network_wifi.c / network_ethernet.c"]
+    UartMgr --> TcpSrv["<b>tcp_server</b><br/>TCP/TLS per bridge"]
+
+    Backend -.->|Network I/O| TcpSrv
+
+    style Main fill:#e1f5ff
+    style NetMgr fill:#fff4e1
+    style UartMgr fill:#fff4e1
+    style Backend fill:#e8f5e9
+    style TcpSrv fill:#e8f5e9
 ```
 
-**Components:**
-- **network_manager**: Unified network API (WiFi/Ethernet selection)
-- **uart_manager**: Multi-UART configuration and data handling
-- **tcp_server**: TCP/TLS server per bridge, optional mTLS
-- **network_wifi/ethernet**: Backend implementations
+**Component Responsibilities:**
+
+| Component | Description |
+|-----------|-------------|
+| **serial_tcp_bridge.c** | Main loop coordinating network and UART operations |
+| **network_manager** | Abstraction layer for WiFi/Ethernet selection (compile-time) |
+| **network_wifi/ethernet** | Backend implementations for network connectivity |
+| **uart_manager** | Manages 1-4 UART bridges with independent configuration |
+| **tcp_server** | TCP/TLS server instances, one per UART bridge, optional mTLS |
 
 ## Performance Characteristics ⚡
 
