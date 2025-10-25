@@ -277,11 +277,6 @@ graph TD
 
     Backend -.->|Network I/O| TcpSrv
 
-    style Main fill:#e1f5ff
-    style NetMgr fill:#fff4e1
-    style UartMgr fill:#fff4e1
-    style Backend fill:#e8f5e9
-    style TcpSrv fill:#e8f5e9
 ```
 
 **Component Responsibilities:**
