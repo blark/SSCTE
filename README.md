@@ -20,7 +20,7 @@ Motivation: Existing solutions lacked secure connectivity (or maybe I’m just b
 
 ## Requirements ✅
 
-- [ESP-IDF](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/) (v4.1.0 or later)
+- [ESP-IDF](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/) (v5.1.0 or later)
 - Compatible with ESP32, ESP32-S3, ESP32-C3, ESP32-C6
 
 ## Setup 🛠️

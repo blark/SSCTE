@@ -1,14 +1,15 @@
 config AVAILABLE_BRIDGE_UARTS
     int
-    default 1 if SOC_UART_NUM = 2 # for chips with only 2 UARTs (i.e. esp32c3 and esp32c6)
-    default 2 if SOC_UART_NUM = 3 # for chips with 3 UARTs (i.e. esp32, esp32s3)
-    default 3 if SOC_UART_NUM = 4 # just in case (not a known configuration)
-    default 4 if SOC_UART_NUM = 5 # for chips with 5 UARTs (i.e. esp32p4)
+    default 1 if SOC_UART_HP_NUM = 2 # for chips with 2 high-power UARTs (e.g. esp32c3, esp32c5, esp32c6)
+    default 2 if SOC_UART_HP_NUM = 3 # for chips with 3 high-power UARTs (e.g. esp32, esp32s3)
+    default 3 if SOC_UART_HP_NUM = 4 # just in case (not a known configuration)
+    default 4 if SOC_UART_HP_NUM = 5 # for chips with 5 high-power UARTs (esp32p4)
     help
       Number of UART peripherals to enable for bridging.
 
-      Calculated automatically as the total SoC UARTs (SOC_UART_NUM) minus one,
-      as the first UART (typically UART0) is reserved for the debug monitor.
+      Calculated automatically as the number of high-power UARTs
+      (SOC_UART_HP_NUM) minus one, as the first UART (typically UART0)
+      is reserved for the debug monitor.
 
 menu "Serial TCP Bridge Configuration"
     menu "WiFi Configuration"
