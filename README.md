@@ -28,8 +28,8 @@ Motivation: Existing solutions lacked secure connectivity (or maybe I’m just b
 ### 1. Clone this repository
 
 ```bash
-git clone https://github.com/yourusername/esp32-serial-tcp-bridge.git
-cd esp32-serial-tcp-bridge
+git clone https://github.com/blark/SSCTE.git
+cd SSCTE
 ```
 
 ### 2. Set your target board
